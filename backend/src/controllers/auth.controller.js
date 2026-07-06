@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken"
 import crypto from "crypto";
 import { Resend } from 'resend';
 import { sendVerificationEmail } from "../services/email.services.js";
+import { verifyGoogleToken } from "../services/google.services.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -333,6 +334,85 @@ const deleteAccount = asyncHandler(async (req, res) => {
 
 });
 
+const googleLogin = asyncHandler(async (req, res) => {
+
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        throw new ApiError(400, "Google ID Token is required");
+    }
+
+    const googleUser = await verifyGoogleToken(idToken);
+
+    let user = await User.findOne({
+        email: googleUser.email
+    });
+
+    if (!user) {
+
+        user = await User.create({
+
+            fullname: googleUser.fullname,
+
+            email: googleUser.email,
+
+            avatar: googleUser.avatar,
+
+            googleId: googleUser.googleId,
+
+            provider: "google",
+
+            isEmailVerified: true,
+
+        });
+
+    }
+
+    else {
+
+        if (!user.googleId) {
+
+            user.googleId = googleUser.googleId;
+
+            user.provider = "google";
+
+            user.isEmailVerified = true;
+
+            await user.save({ validateBeforeSave: false });
+
+        }
+
+    }
+
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshToken(user._id);
+
+    const loggedInUser = await User.findById(user._id)
+        .select("-password -refreshToken");
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken
+                },
+                "Google login successful"
+            )
+        );
+
+});
+
 export {
     registerUser,
     loginUser,
@@ -343,5 +423,6 @@ export {
     updateUserAvatarImage,
     getCurrentUser,
     verifyEmail,
-    deleteAccount
+    deleteAccount,
+    googleLogin
 }

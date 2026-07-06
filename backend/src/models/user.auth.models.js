@@ -47,6 +47,16 @@ const userSchema = new mongoose.Schema({
     emailVerificationExpiry: {
         type: Date,
     },
+    googleId: {
+        type: String,
+        default: null
+    },
+
+    provider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
+    }
 }, {
     timestamps: true
 })
