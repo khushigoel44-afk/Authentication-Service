@@ -1,11 +1,19 @@
-import { transporter } from "../utils/nodemailer.js";
+//resend is paid.
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendVerificationEmail = async (email, token) => {
 
-    await transporter.sendMail({
-        from: `"Auth API" <${process.env.EMAIL_USER}>`,
+    console.log("Sending verification email to :", email)
+    await resend.emails.send({
+
+        from: "Auth API <onboarding@resend.dev>",
+
         to: email,
+
         subject: "Verify Your Email Address",
+
         html: `
             <div style="max-width:600px;margin:auto;padding:30px;font-family:Arial,sans-serif;background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;">
 
@@ -52,16 +60,21 @@ export const sendVerificationEmail = async (email, token) => {
                 </p>
             </div>
         `
+
     });
 
 };
 
 export const sendResetPasswordEmail = async (email, token) => {
 
-    await transporter.sendMail({
-        from: `"Auth API" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+
+        from: "Auth API <onboarding@resend.dev>",
+
         to: email,
+
         subject: "Reset Password",
+
         html: `
             <div style="max-width:600px;margin:auto;padding:30px;font-family:Arial,sans-serif;background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;">
 
